@@ -11,6 +11,30 @@ import {
 } from "./controllers/donante_controller.js";
 
 const app = express();
+const sanitizeUrl = (url = "") => url.replace(/\/$/, "").trim();
+const corsWhitelist = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((origin) => sanitizeUrl(origin))
+  .filter(Boolean);
+const extraOrigins = [
+  sanitizeUrl(process.env.CLIENT_URL),
+  sanitizeUrl(process.env.URL_FRONTEND),
+].filter(Boolean);
+const allowedOrigins = [...new Set([...corsWhitelist, ...extraOrigins])];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.length === 0) return callback(null, true);
+    const isAllowed = allowedOrigins.some((allowed) =>
+      origin.startsWith(allowed)
+    );
+    return isAllowed
+      ? callback(null, true)
+      : callback(new Error(`CORS bloqueado para origen: ${origin}`));
+  },
+  credentials: true,
+};
+app.set("trust proxy", 1); // necesario en Render/hosting detrás de proxy
 
 // ====== MIDDLEWARES BÁSICOS ======
 
@@ -18,8 +42,8 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// CORS MUY SIMPLE (como el ejemplo de tesis)
-app.use(cors());
+// CORS con lista blanca desde .env
+app.use(cors(corsOptions));
 
 // (Opcional) si usas subida de archivos en otro lado del proyecto:
 app.use(

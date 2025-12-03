@@ -1,7 +1,15 @@
 // src/helpers/sendMail.js
 import sendMail from "../config/nodemailer.js";
 
-const FRONT_URL = process.env.CLIENT_URL || "http://localhost:5175";
+const buildFrontUrl = () => {
+  const raw =
+    process.env.URL_FRONTEND ||
+    process.env.CLIENT_URL ||
+    "http://localhost:5173";
+  return raw.replace(/\/$/, "");
+};
+
+const FRONT_URL = buildFrontUrl();
 
 /**
  * Correo de registro / confirmación de cuenta
