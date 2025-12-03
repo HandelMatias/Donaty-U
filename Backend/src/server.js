@@ -55,6 +55,11 @@ app.use(
 
 // ====== RUTAS ======
 
+// Landing simple para la raíz
+app.get("/", (_req, res) => {
+  res.json({ status: "ok", service: "donaty-api" });
+});
+
 // Health check (para probar rápido que el backend vive)
 app.get("/health", (_req, res) => {
   res.json({ status: "ok", service: "donaty-api" });
