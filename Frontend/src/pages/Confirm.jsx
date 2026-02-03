@@ -9,7 +9,7 @@ const Confirm = () => {
   useEffect(() => {
     const verifyToken = async () => {
       try {
-        const url = `${import.meta.env.VITE_BACKEND_URL}/confirmar/${token}`; // 👈 AQUÍ EL CAMBIO
+        const url = `${import.meta.env.VITE_BACKEND_URL}/donante/confirmar/${token}`;
 
         const response = await fetch(url);
         const data = await response.json();

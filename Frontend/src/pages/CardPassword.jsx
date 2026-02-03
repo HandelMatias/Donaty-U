@@ -16,7 +16,7 @@ const CardPassword = () => {
       return;
     }
 
-    const url = `${import.meta.env.VITE_BACKEND_URL}/actualizarpassword/${user._id}`;
+    const url = `${import.meta.env.VITE_BACKEND_URL}/donante/actualizarpassword/${user._id}`;
     const response = await updatePasswordProfile(url, dataForm);
 
     // Si el backend responde 200, limpiamos el formulario y cerramos sesión
@@ -42,6 +42,7 @@ const CardPassword = () => {
             </label>
             <input
               type="password"
+              autoComplete="current-password"
               placeholder="Ingresa tu contraseña actual"
               className="block w-full rounded-md border border-gray-300 py-2 px-2 text-gray-700 mb-4"
               {...register("passwordactual", {
@@ -62,6 +63,7 @@ const CardPassword = () => {
             </label>
             <input
               type="password"
+              autoComplete="new-password"
               placeholder="Ingresa la nueva contraseña"
               className="block w-full rounded-md border border-gray-300 py-2 px-2 text-gray-700 mb-4"
               {...register("passwordnuevo", {

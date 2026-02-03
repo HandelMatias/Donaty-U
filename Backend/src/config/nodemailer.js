@@ -19,6 +19,9 @@ const transporter = nodemailer.createTransport({
   host: mailHost,
   port: mailPort,
   secure: mailSecure,
+  connectionTimeout: 10000,
+  greetingTimeout: 5000,
+  socketTimeout: 10000,
   auth: {
     user: mailUser,
     pass: mailPass,

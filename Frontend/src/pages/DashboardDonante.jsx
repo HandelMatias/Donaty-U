@@ -23,7 +23,7 @@ const [preview, setPreview] = useState({
 
   // Cargar perfil desde el backend al entrar al dashboard
 useEffect(() => {
-    profile(); // GET /perfil con el token
+    profile(); // GET /donante/perfil con el token
 }, [profile]);
 
   // Cuando llegue "user" desde Zustand, lo volcamos a la vista previa
@@ -34,7 +34,7 @@ useEffect(() => {
         apellido: user.apellido || "",
         email: user.email || "",
         direccion: user.direccion || "",
-        telefono: user.celular || "",
+        telefono: user.telefono || "",
     });
     }
 }, [user]);

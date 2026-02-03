@@ -20,7 +20,7 @@ const Reset = () => {
     const verifyToken = async () => {
       try {
         setLoadingVerify(true);
-        const url = `${import.meta.env.VITE_BACKEND_URL}/recuperarpassword/${token}`;
+        const url = `${import.meta.env.VITE_BACKEND_URL}/donante/recuperarpassword/${token}`;
         console.log("Verificando token en:", url);
 
         const resp = await fetch(url);
@@ -77,7 +77,7 @@ const Reset = () => {
 
     try {
       setLoadingSubmit(true);
-      const url = `${import.meta.env.VITE_BACKEND_URL}/nuevopassword/${token}`;
+      const url = `${import.meta.env.VITE_BACKEND_URL}/donante/nuevopassword/${token}`;
       console.log("Enviando nueva contraseña a:", url);
 
       const resp = await fetch(url, {
@@ -156,6 +156,7 @@ const Reset = () => {
             </label>
             <input
               type="password"
+              autoComplete="new-password"
               placeholder="Ingresa tu nueva contraseña"
               className="block w-full rounded-md border border-gray-300 py-2 px-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={password}
@@ -167,6 +168,7 @@ const Reset = () => {
             </label>
             <input
               type="password"
+              autoComplete="new-password"
               placeholder="Repite tu contraseña"
               className="block w-full rounded-md border border-gray-300 py-2 px-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={password2}

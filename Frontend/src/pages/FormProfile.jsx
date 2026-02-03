@@ -16,7 +16,7 @@ const FormProfile = () => {
 
   const updateUser = (dataForm) => {
     if (!user?._id) return;
-    const url = `${import.meta.env.VITE_BACKEND_URL}/actualizarperfil/${user._id}`;
+    const url = `${import.meta.env.VITE_BACKEND_URL}/donante/actualizarperfil/${user._id}`;
     updateProfile(url, dataForm);
   };
 
@@ -27,7 +27,7 @@ const FormProfile = () => {
         apellido: user.apellido,
         email: user.email,
         direccion: user.direccion,
-        celular: user.celular,
+        telefono: user.telefono,
       });
     }
   }, [user, reset]);
@@ -91,16 +91,16 @@ const FormProfile = () => {
           )}
         </div>
 
-        {/* Celular */}
+        {/* Teléfono */}
         <div>
-          <label className="block text-sm font-semibold mb-1">Celular</label>
+          <label className="block text-sm font-semibold mb-1">Teléfono</label>
           <input
             type="text"
             className="block w-full rounded-md border border-gray-300 py-2 px-2 text-gray-700"
-            {...register("celular", { required: "El celular es obligatorio" })}
+            {...register("telefono", { required: "El teléfono es obligatorio" })}
           />
-          {errors.celular && (
-            <p className="text-red-700 text-sm">{errors.celular.message}</p>
+          {errors.telefono && (
+            <p className="text-red-700 text-sm">{errors.telefono.message}</p>
           )}
         </div>
       </div>

@@ -12,7 +12,7 @@ import { isBlank, requireFields } from "../utils/validation.js";
 const isValidToken = (token = "") =>
   typeof token === "string" && token.trim().length === 32;
 
-const registro = async (req, res) => {
+const registroRecolector = async (req, res) => {
   try {
     const { nombre, apellido, direccion, telefono, email, password } = req.body || {};
     const faltantes = requireFields(req.body, [
@@ -21,7 +21,7 @@ const registro = async (req, res) => {
       "direccion",
       "telefono",
       "email",
-      "password"
+      "password",
     ]);
     if (faltantes.length > 0) {
       return res
@@ -41,26 +41,23 @@ const registro = async (req, res) => {
         .json({ msg: "Lo sentimos, el email ya se encuentra registrado" });
     }
 
-    const nuevoDonante = new Donante({
+    const nuevoRecolector = new Recolector({
       nombre,
       apellido,
       direccion: direccion ?? "",
       telefono: telefono ?? "",
       email: normalizedEmail,
-      rol: "donante",
-      perfilCompleto: true,
       status: true,
-      confirmEmail: false
+      confirmEmail: false,
     });
-    nuevoDonante.password = await nuevoDonante.encryptPassword(password);
+    nuevoRecolector.password = await nuevoRecolector.encryptPassword(password);
 
-    // 🔹 GENERAR Y GUARDAR TOKEN DE CONFIRMACIÓN
-    const token = nuevoDonante.createToken();
-    nuevoDonante.token = token;
-    nuevoDonante.confirmEmail = false;
+    const token = nuevoRecolector.createToken();
+    nuevoRecolector.token = token;
+    nuevoRecolector.confirmEmail = false;
 
     await sendMailToRegister(normalizedEmail, token);
-    await nuevoDonante.save();
+    await nuevoRecolector.save();
 
     res
       .status(200)
@@ -71,41 +68,7 @@ const registro = async (req, res) => {
   }
 };
 
-const confirmarMail = async (req, res) => {
-  try {
-    const { token } = req.params;
-    if (!isValidToken(token)) {
-      return res.status(400).json({ msg: "Token inválido o malformado" });
-    }
-
-    let user = await Donante.findOne({ token, confirmEmail: false });
-    if (!user) {
-      user = await Admin.findOne({ token, confirmEmail: false });
-    }
-    if (!user) {
-      user = await Recolector.findOne({ token, confirmEmail: false });
-    }
-
-    if (!user)
-      return res
-        .status(404)
-        .json({ msg: "Token inválido o cuenta ya confirmada" });
-
-    user.token = null;
-    user.confirmEmail = true;
-
-    await user.save();
-
-    res
-      .status(200)
-      .json({ msg: "Cuenta confirmada, ya puedes iniciar sesión" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ msg: `❌ Error en el servidor - ${error}` });
-  }
-};
-
-const recuperarPassword = async (req, res) => {
+const recuperarPasswordRecolector = async (req, res) => {
   try {
     const { email } = req.body || {};
     if (isBlank(email))
@@ -114,16 +77,18 @@ const recuperarPassword = async (req, res) => {
         .json({ msg: "Debes ingresar un correo electrónico" });
 
     const normalizedEmail = email.trim().toLowerCase();
-    const donante = await Donante.findOne({ email: normalizedEmail });
-    if (!donante)
+    const recolector = await Recolector.findOne({
+      email: normalizedEmail,
+    });
+    if (!recolector)
       return res
         .status(404)
         .json({ msg: "El usuario no se encuentra registrado" });
 
-    const token = donante.createToken();
-    donante.token = token;
+    const token = recolector.createToken();
+    recolector.token = token;
     await sendMailToRecoveryPassword(normalizedEmail, token);
-    await donante.save();
+    await recolector.save();
     res.status(200).json({
       msg: "Revisa tu correo electrónico para reestablecer tu cuenta",
     });
@@ -133,14 +98,14 @@ const recuperarPassword = async (req, res) => {
   }
 };
 
-const comprobarTokenPasword = async (req, res) => {
+const comprobarTokenPasswordRecolector = async (req, res) => {
   try {
     const { token } = req.params;
     if (!isValidToken(token)) {
       return res.status(400).json({ msg: "Token inválido o malformado" });
     }
-    const donante = await Donante.findOne({ token });
-    if (!donante || donante.token !== token) {
+    const recolector = await Recolector.findOne({ token });
+    if (!recolector || recolector.token !== token) {
       return res
         .status(404)
         .json({ msg: "Lo sentimos, no se puede validar la cuenta" });
@@ -154,8 +119,7 @@ const comprobarTokenPasword = async (req, res) => {
   }
 };
 
-/* 🔹🔹 AQUÍ ESTÁ LA FUNCIÓN IMPORTANTE 🔹🔹 */
-const crearNuevoPassword = async (req, res) => {
+const crearNuevoPasswordRecolector = async (req, res) => {
   try {
     const { token } = req.params;
 
@@ -163,7 +127,6 @@ const crearNuevoPassword = async (req, res) => {
       return res.status(400).json({ msg: "Token inválido o malformado" });
     }
 
-    // Aceptamos varios nombres por si el front cambia:
     const {
       password,
       confirmpassword,
@@ -186,16 +149,16 @@ const crearNuevoPassword = async (req, res) => {
         .json({ msg: "Los passwords no coinciden" });
     }
 
-    const donante = await Donante.findOne({ token });
-    if (!donante) {
+    const recolector = await Recolector.findOne({ token });
+    if (!recolector) {
       return res
         .status(404)
         .json({ msg: "No se puede validar la cuenta" });
     }
 
-    donante.token = null;
-    donante.password = await donante.encryptPassword(password);
-    await donante.save();
+    recolector.token = null;
+    recolector.password = await recolector.encryptPassword(password);
+    await recolector.save();
 
     res.status(200).json({
       msg: "Felicitaciones, ya puedes iniciar sesión con tu nuevo password",
@@ -206,7 +169,7 @@ const crearNuevoPassword = async (req, res) => {
   }
 };
 
-const login = async (req, res) => {
+const loginRecolector = async (req, res) => {
   try {
     const { email, password } = req.body || {};
     const faltantes = requireFields(req.body, ["email", "password"]);
@@ -217,21 +180,21 @@ const login = async (req, res) => {
     }
 
     const normalizedEmail = (email || "").trim().toLowerCase();
-    const donante = await Donante.findOne({ email: normalizedEmail }).select(
-      "-__v -token -updatedAt -createdAt +password"
-    );
-    if (!donante)
+    const recolector = await Recolector.findOne({
+      email: normalizedEmail,
+    }).select("-__v -token -updatedAt -createdAt +password");
+    if (!recolector)
       return res
         .status(404)
         .json({ msg: "El usuario no se encuentra registrado" });
-    if (donante.status === false)
+    if (recolector.status === false)
       return res.status(403).json({ msg: "Cuenta desactivada" });
-    if (!donante.confirmEmail)
+    if (!recolector.confirmEmail)
       return res
         .status(403)
         .json({ msg: "Debes verificar tu cuenta antes de iniciar sesión" });
 
-    const verificarPassword = await donante.matchPassword(password);
+    const verificarPassword = await recolector.matchPassword(password);
     if (!verificarPassword)
       return res.status(401).json({ msg: "El password no es correcto" });
 
@@ -243,9 +206,8 @@ const login = async (req, res) => {
       telefono,
       _id,
       rol,
-      perfilCompleto,
-    } = donante;
-    const token = crearTokenJWT(donante._id, donante.rol);
+    } = recolector;
+    const token = crearTokenJWT(recolector._id, recolector.rol);
 
     res.status(200).json({
       token,
@@ -254,7 +216,6 @@ const login = async (req, res) => {
       apellido,
       direccion,
       telefono,
-      perfilCompleto,
       _id,
       correo,
     });
@@ -264,24 +225,24 @@ const login = async (req, res) => {
   }
 };
 
-const perfil = (req, res) => {
+const perfilRecolector = (req, res) => {
   const { token, confirmEmail, createdAt, updatedAt, __v, ...datosPerfil } =
     req.donanteHeader.toJSON();
   res.status(200).json(datosPerfil);
 };
 
-const actualizarPerfil = async (req, res) => {
+const actualizarPerfilRecolector = async (req, res) => {
   try {
     const { id } = req.params;
     const { nombre, apellido, direccion, telefono, email } = req.body || {};
     if (!mongoose.Types.ObjectId.isValid(id))
       return res.status(400).json({ msg: `ID inválido: ${id}` });
 
-    const donante = await Donante.findById(id).select("+password");
-    if (!donante)
+    const recolector = await Recolector.findById(id).select("+password");
+    if (!recolector)
       return res
         .status(404)
-        .json({ msg: `No existe el donante con ID ${id}` });
+        .json({ msg: `No existe el recolector con ID ${id}` });
 
     const payload = req.body || {};
     const allowedFields = ["nombre", "apellido", "direccion", "telefono", "email"];
@@ -297,7 +258,7 @@ const actualizarPerfil = async (req, res) => {
     }
 
     const normalizedEmail = email ? email.trim().toLowerCase() : undefined;
-    if (normalizedEmail && donante.email !== normalizedEmail) {
+    if (normalizedEmail && recolector.email !== normalizedEmail) {
       const [emailExistente, emailAdmin, emailRecolector] = await Promise.all([
         Donante.findOne({ email: normalizedEmail }),
         Admin.findOne({ email: normalizedEmail }),
@@ -308,44 +269,41 @@ const actualizarPerfil = async (req, res) => {
           .status(404)
           .json({ msg: "El email ya se encuentra registrado" });
       }
-      donante.email = normalizedEmail;
+      recolector.email = normalizedEmail;
     }
 
-    if (nombre !== undefined) donante.nombre = nombre;
-    if (apellido !== undefined) donante.apellido = apellido;
-    if (direccion !== undefined) donante.direccion = direccion;
-    if (telefono !== undefined) donante.telefono = telefono;
-    donante.perfilCompleto = Boolean(
-      (donante.nombre || "").trim() &&
-      (donante.apellido || "").trim() &&
-      (donante.direccion || "").trim() &&
-      (donante.telefono || "").trim()
-    );
-    await donante.save();
+    if (nombre !== undefined) recolector.nombre = nombre;
+    if (apellido !== undefined) recolector.apellido = apellido;
+    if (direccion !== undefined) recolector.direccion = direccion;
+    if (telefono !== undefined) recolector.telefono = telefono;
+    await recolector.save();
 
-    res.status(200).json(donante.toJSON());
+    res.status(200).json(recolector.toJSON());
   } catch (error) {
     console.error(error);
     res.status(500).json({ msg: `❌ Error en el servidor - ${error}` });
   }
 };
 
-const actualizarPassword = async (req, res) => {
+const actualizarPasswordRecolector = async (req, res) => {
   try {
-    const donante = await Donante.findById(
-      req.donanteHeader._id
-    ).select("+password");
-    if (!donante)
+    const recolector = await Recolector.findById(req.donanteHeader._id).select(
+      "+password"
+    );
+    if (!recolector)
       return res.status(404).json({
-        msg: `Lo sentimos, no existe el donante ${req.donanteHeader._id}`,
+        msg: `Lo sentimos, no existe el recolector ${req.donanteHeader._id}`,
       });
 
-    const faltantes = requireFields(req.body, ["passwordactual", "passwordnuevo"]);
+    const faltantes = requireFields(req.body, [
+      "passwordactual",
+      "passwordnuevo",
+    ]);
     if (faltantes.length > 0) {
       return res.status(400).json({ msg: "Debes llenar todos los campos" });
     }
 
-    const verificarPassword = await donante.matchPassword(
+    const verificarPassword = await recolector.matchPassword(
       req.body?.passwordactual
     );
     if (!verificarPassword)
@@ -353,10 +311,10 @@ const actualizarPassword = async (req, res) => {
         msg: "Lo sentimos, el password actual no es el correcto",
       });
 
-    donante.password = await donante.encryptPassword(
+    recolector.password = await recolector.encryptPassword(
       req.body?.passwordnuevo
     );
-    await donante.save();
+    await recolector.save();
 
     res.status(200).json({ msg: "Password actualizado correctamente" });
   } catch (error) {
@@ -366,13 +324,12 @@ const actualizarPassword = async (req, res) => {
 };
 
 export {
-  registro,
-  confirmarMail,
-  recuperarPassword,
-  comprobarTokenPasword,
-  crearNuevoPassword,
-  login,
-  perfil,
-  actualizarPerfil,
-  actualizarPassword,
+  registroRecolector,
+  recuperarPasswordRecolector,
+  comprobarTokenPasswordRecolector,
+  crearNuevoPasswordRecolector,
+  loginRecolector,
+  perfilRecolector,
+  actualizarPerfilRecolector,
+  actualizarPasswordRecolector,
 };

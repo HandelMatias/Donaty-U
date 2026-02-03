@@ -18,10 +18,10 @@ const storeProfile = create((set) => ({
 
   clearUser: () => set({ user: null }),
 
-  // Obtener perfil /perfil
+  // Obtener perfil /donante/perfil
   profile: async () => {
     try {
-      const url = `${import.meta.env.VITE_BACKEND_URL}/perfil`;
+      const url = `${import.meta.env.VITE_BACKEND_URL}/donante/perfil`;
       const respuesta = await axios.get(url, getAuthHeaders());
       set({ user: respuesta.data });
     } catch (error) {
@@ -32,7 +32,7 @@ const storeProfile = create((set) => ({
     }
   },
 
-  // Actualizar datos del perfil /actualizarperfil/:id
+  // Actualizar datos del perfil /donante/actualizarperfil/:id
   updateProfile: async (url, data) => {
     try {
       const respuesta = await axios.put(url, data, getAuthHeaders());
@@ -50,7 +50,7 @@ const storeProfile = create((set) => ({
     }
   },
 
-  // Actualizar contraseña /actualizarpassword/:id
+  // Actualizar contraseña /donante/actualizarpassword/:id
   updatePasswordProfile: async (url, data) => {
     try {
       const respuesta = await axios.put(url, data, getAuthHeaders());

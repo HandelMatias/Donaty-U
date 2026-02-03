@@ -7,6 +7,7 @@ import Register from "./pages/Register.jsx";
 import Forgot from "./pages/Forgot.jsx";
 import Reset from "./pages/Reset.jsx";
 import Confirm from "./pages/Confirm.jsx";
+import PoliticasTerms from "./pages/PoliticasTerms.jsx";
 
 import DashboardDonante from "./pages/DashboardDonante.jsx";
 
@@ -32,6 +33,9 @@ function App() {
 
         {/* Dashboard del Donante */}
         <Route path="/donante" element={<DashboardDonante />} />
+
+        {/* Políticas y términos */}
+        <Route path="/politicsterms" element={<PoliticasTerms />} />
 
         {/* Rutas no encontradas */}
         <Route path="*" element={<h1>404 - Página no encontrada</h1>} />

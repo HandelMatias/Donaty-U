@@ -27,8 +27,8 @@ const Login = () => {
   const loginUser = async (dataForm) => {
     const { email, password } = dataForm;
 
-    const url = `${import.meta.env.VITE_BACKEND_URL}/login`; 
-    // VITE_BACKEND_URL = http://localhost:4000/api/donante
+    const url = `${import.meta.env.VITE_BACKEND_URL}/donante/login`;
+    // VITE_BACKEND_URL = http://localhost:4000/api
 
     console.log("Intentando login en:", url);
     try {
@@ -104,6 +104,8 @@ const Login = () => {
               <label className="block font-medium mb-1">E-mail</label>
               <input
                 type="email"
+                name="email"
+                autoComplete="username"
                 className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Tu Email"
                 {...register("email", {
@@ -122,6 +124,7 @@ const Login = () => {
               <label className="block font-medium mb-1">Contraseña</label>
               <input
                 type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
                 className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Tu contraseña"
                 {...register("password", {

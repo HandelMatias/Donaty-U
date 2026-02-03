@@ -5,10 +5,12 @@ import fileUpload from "express-fileupload";
 import "dotenv/config";
 
 import router from "./routers/index.js";
+import passport from "./config/passport.js";
 import {
   confirmarMail,
   comprobarTokenPasword,
 } from "./controllers/donante_controller.js";
+import { stripeWebhook } from "./controllers/stripe_controller.js";
 
 const app = express();
 const sanitizeUrl = (url = "") => url.replace(/\/$/, "").trim();
@@ -38,12 +40,22 @@ app.set("trust proxy", 1); // necesario en Render/hosting detrás de proxy
 
 // ====== MIDDLEWARES BÁSICOS ======
 
+// Webhook de Stripe (requiere raw body)
+app.post(
+  "/api/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  stripeWebhook
+);
+
 // Permitir JSON en req.body
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // CORS con lista blanca desde .env
 app.use(cors(corsOptions));
+
+// Passport (Google OAuth)
+app.use(passport.initialize());
 
 // (Opcional) si usas subida de archivos en otro lado del proyecto:
 app.use(

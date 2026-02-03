@@ -27,19 +27,18 @@ const Register = () => {
   // Función que se ejecuta al enviar TODO el formulario
   const registerUser = async (dataForm) => {
     // Desestructuración: así llega req.body al backend
-    const { nombre, apellido, direccion, celular, email, password } = dataForm;
+    const { nombre, apellido, direccion, telefono, email, password } = dataForm;
 
     const payload = {
       nombre,
       apellido,
       direccion,
-      celular,
+      telefono,
       email,
       password,
-      rol: "DONANTE", // si tu backend maneja roles
     };
 
-    const url = `${import.meta.env.VITE_BACKEND_URL}/registro`;
+    const url = `${import.meta.env.VITE_BACKEND_URL}/donante/registro`;
     console.log("URL backend:", url);
     console.log("Datos enviados al backend:", payload);
 
@@ -279,6 +278,8 @@ const Register = () => {
                     </label>
                     <input
                       type="email"
+                      name="email"
+                      autoComplete="username"
                       placeholder="correo@ejemplo.com"
                       className="border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-800 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm"
                       {...register("email", {
@@ -292,22 +293,22 @@ const Register = () => {
                     )}
                   </div>
 
-                  {/* Celular */}
-                  <div className="flex flex-col space-y-1">
-                    <label className="text-gray-800 text-sm md:text-base">
-                      Teléfono:
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Tu teléfono"
-                      className="border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-800 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm"
-                      {...register("celular", {
-                        required: "El celular es obligatorio",
+                    {/* Teléfono */}
+                    <div className="flex flex-col space-y-1">
+                      <label className="text-gray-800 text-sm md:text-base">
+                        Teléfono:
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Tu teléfono"
+                        className="border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-800 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm"
+                      {...register("telefono", {
+                        required: "El teléfono es obligatorio",
                       })}
                     />
-                    {errors.celular && (
+                    {errors.telefono && (
                       <p className="text-red-700 text-sm">
-                        {errors.celular.message}
+                        {errors.telefono.message}
                       </p>
                     )}
                   </div>
@@ -320,6 +321,7 @@ const Register = () => {
                     <div className="relative">
                       <input
                         type={showPassword ? "text" : "password"}
+                        autoComplete="new-password"
                         placeholder="Tu contraseña"
                         className="border border-gray-300 rounded-lg px-4 py-2 w-full bg-white text-gray-800 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm pr-10"
                         {...register("password", {

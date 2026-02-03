@@ -17,7 +17,7 @@ const Forgot = () => {
   const [loading, setLoading] = useState(false);
 
   const sendMail = async ({ email }) => {
-    const url = `${import.meta.env.VITE_BACKEND_URL}/recuperarpassword`;
+    const url = `${import.meta.env.VITE_BACKEND_URL}/donante/recuperarpassword`;
     console.log("URL recuperar password:", url);
 
     try {
@@ -79,6 +79,8 @@ const Forgot = () => {
               </label>
               <input
                 type="email"
+                name="email"
+                autoComplete="email"
                 placeholder="Ingresa un correo electrónico válido"
                 className="block w-full rounded-md border border-gray-300 py-2 px-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 {...register("email", {
