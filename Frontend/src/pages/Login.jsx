@@ -15,6 +15,7 @@ const Login = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [role, setRole] = useState("donante"); // donante | admin | recolector
 
   // react-hook-form
   const {
@@ -27,8 +28,14 @@ const Login = () => {
   const loginUser = async (dataForm) => {
     const { email, password } = dataForm;
 
-    const url = `${import.meta.env.VITE_BACKEND_URL}/donante/login`;
-    // VITE_BACKEND_URL = http://localhost:4000/api
+    const base = (import.meta.env.VITE_BACKEND_URL || "http://localhost:4000/api").replace(/\/$/, "");
+    const path =
+      role === "admin"
+        ? "/admin/login"
+        : role === "recolector"
+        ? "/recolector/login"
+        : "/donante/login";
+    const url = `${base}${path}`;
 
     console.log("Intentando login en:", url);
     try {
@@ -49,9 +56,16 @@ const Login = () => {
 
       // ✅ Guardamos token y datos básicos en localStorage
       if (data.token) {
-        localStorage.setItem("donatyToken", data.token);
+        const tokenKey =
+          role === "admin"
+            ? "donatyAdminToken"
+            : role === "recolector"
+            ? "donatyRecolectorToken"
+            : "donatyToken";
+        localStorage.setItem(tokenKey, data.token);
       }
-      localStorage.setItem("donatyUser", JSON.stringify(data));
+      localStorage.setItem("donatyUser", JSON.stringify({ ...data, role }));
+      localStorage.setItem("donatyRole", role);
 
       toast.success("Inicio de sesión exitoso.", {
         position: "top-right",
@@ -59,7 +73,9 @@ const Login = () => {
       });
 
       setTimeout(() => {
-        navigate("/donante");
+        if (role === "admin") navigate("/admin");
+        else if (role === "recolector") navigate("/recolector");
+        else navigate("/donante");
       }, 2000);
     } catch (error) {
       console.error(error);
@@ -70,6 +86,15 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loginWithGoogle = () => {
+    const base =
+      (import.meta.env.VITE_BACKEND_URL || "http://localhost:4000/api").replace(
+        /\/$/,
+        ""
+      );
+    window.location.href = `${base}/donante/google`;
   };
 
   return (
@@ -98,6 +123,31 @@ const Login = () => {
             className="w-full max-w-xl bg-white shadow-2xl shadow-black/50 rounded-xl p-11"
           >
             <h3 className="text-xl font-semibold mb-4">Ingresa tus datos</h3>
+
+            {/* Rol */}
+            <div className="mb-6">
+              <label className="block font-medium mb-2">Rol</label>
+              <div className="flex flex-wrap justify-center gap-3">
+                {[
+                  { value: "donante", label: "Donante" },
+                  { value: "admin", label: "Admin" },
+                  { value: "recolector", label: "Recolector" },
+                ].map((r) => (
+                  <button
+                    key={r.value}
+                    type="button"
+                    onClick={() => setRole(r.value)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium border transition shadow-sm ${
+                      role === r.value
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                    }`}
+                  >
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* Email */}
             <div className="mb-4">
@@ -168,6 +218,43 @@ const Login = () => {
             >
               {loading ? "Ingresando..." : "Iniciar sesión"}
             </button>
+
+            <div className="my-4 flex items-center gap-3">
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-sm text-gray-500">o</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
+
+            <button
+              type="button"
+              onClick={loginWithGoogle}
+              className="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-lg py-2 font-semibold text-gray-700 hover:bg-gray-100 transition"
+            >
+              <svg
+                className="w-5 h-5"
+                viewBox="0 0 48 48"
+                aria-hidden="true"
+              >
+                <path
+                  fill="#EA4335"
+                  d="M24 9.5c3.54 0 6 1.54 7.38 2.83l5.4-5.26C33.66 3.36 29.33 1.5 24 1.5 14.94 1.5 7.02 6.98 3.64 14.9l6.9 5.36C12.27 13.14 17.62 9.5 24 9.5z"
+                />
+                <path
+                  fill="#4285F4"
+                  d="M46.5 24.5c0-1.64-.15-3.19-.43-4.69H24v9.04h12.65c-.54 2.86-2.17 5.28-4.59 6.9l7.15 5.55c4.18-3.86 7-9.55 7-16.8z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M10.54 28.14a14.44 14.44 0 01-.76-4.64c0-1.61.27-3.17.76-4.64l-6.9-5.36C1.5 16.43 0 20.06 0 24c0 3.94 1.5 7.57 3.64 10.5l6.9-5.36z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M24 46.5c5.33 0 9.8-1.76 13.06-4.82l-7.15-5.55c-1.98 1.33-4.52 2.12-7.38 2.12-6.38 0-11.73-3.64-13.46-8.92l-6.9 5.36C7.02 41.02 14.94 46.5 24 46.5z"
+                />
+                <path fill="none" d="M0 0h48v48H0z" />
+              </svg>
+              Continuar con Google
+            </button>
           </form>
 
           {/* Enlace registro */}
@@ -184,21 +271,21 @@ const Login = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-[#170404] text-white py-6 font-sans">
+      <footer className="bg-slate-900 text-white py-6 font-sans">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           {/* Políticas */}
           <nav className="flex gap-2">
-            <NavLink to="/politicsterms" className="text-pink-200 hover:underline">
+            <NavLink to="/politicsterms" className="text-white hover:underline">
               Políticas de Privacidad
             </NavLink>
             |
-            <NavLink to="/politicsterms" className="text-pink-200 hover:underline">
+            <NavLink to="/politicsterms" className="text-white hover:underline">
               Términos de Uso
             </NavLink>
           </nav>
 
           {/* Derechos */}
-          <p>© DONATY-EC. Todos los derechos reservados.</p>
+          <p>© DONATY-U Todos los derechos reservados.</p>
 
           {/* Iconos sociales */}
           <div className="flex gap-4">

@@ -19,7 +19,7 @@ const PoliticasTerms = () => {
         <div className="absolute inset-0 bg-black/60" />
         <div className="relative z-10 max-w-5xl mx-auto px-6 h-full flex flex-col justify-center">
           <p className="text-pink-200 uppercase tracking-widest text-sm mb-3">
-            Donaty-EC
+            Donaty-U
           </p>
           <h1 className="text-3xl md:text-5xl text-white font-bold leading-tight">
             Políticas de Privacidad
@@ -118,19 +118,19 @@ const PoliticasTerms = () => {
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-[#170404] text-white py-6 font-sans">
+      <footer className="bg-slate-900 text-white py-6 font-sans">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 px-6">
           <nav className="flex gap-2">
-            <NavLink to="/politicsterms" className="text-pink-200 hover:underline">
+            <NavLink to="/politicsterms" className="text-white hover:underline">
               Políticas de Privacidad
             </NavLink>
             |
-            <NavLink to="/politicsterms" className="text-pink-200 hover:underline">
+            <NavLink to="/politicsterms" className="text-white hover:underline">
               Términos de Uso
             </NavLink>
           </nav>
 
-          <p>© DONATY-EC. Todos los derechos reservados.</p>
+          <p>© DONATY-U Todos los derechos reservados.</p>
 
           <div className="flex gap-4">
             <a

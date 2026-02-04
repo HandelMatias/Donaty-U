@@ -12,6 +12,7 @@ const Reset = () => {
   const [tokenValid, setTokenValid] = useState(null); // null = cargando, true = ok, false = inválido
   const [loadingVerify, setLoadingVerify] = useState(false);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
+  const [role, setRole] = useState("donante"); // donante | admin | recolector
 
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
@@ -20,7 +21,14 @@ const Reset = () => {
     const verifyToken = async () => {
       try {
         setLoadingVerify(true);
-        const url = `${import.meta.env.VITE_BACKEND_URL}/donante/recuperarpassword/${token}`;
+        const base = (import.meta.env.VITE_BACKEND_URL || "http://localhost:4000/api").replace(/\/$/, "");
+        const path =
+          role === "admin"
+            ? "/admin/recuperarpassword"
+            : role === "recolector"
+            ? "/recolector/recuperarpassword"
+            : "/donante/recuperarpassword";
+        const url = `${base}${path}/${token}`;
         console.log("Verificando token en:", url);
 
         const resp = await fetch(url);
@@ -77,7 +85,14 @@ const Reset = () => {
 
     try {
       setLoadingSubmit(true);
-      const url = `${import.meta.env.VITE_BACKEND_URL}/donante/nuevopassword/${token}`;
+      const base = (import.meta.env.VITE_BACKEND_URL || "http://localhost:4000/api").replace(/\/$/, "");
+      const path =
+        role === "admin"
+          ? "/admin/nuevopassword"
+          : role === "recolector"
+          ? "/recolector/nuevopassword"
+          : "/donante/nuevopassword";
+      const url = `${base}${path}/${token}`;
       console.log("Enviando nueva contraseña a:", url);
 
       const resp = await fetch(url, {
@@ -135,6 +150,40 @@ const Reset = () => {
         src={logoDog}
         alt="Donaty reset"
       />
+
+      {/* Rol */}
+      <div className="mb-4 text-sm text-gray-700 flex gap-4 justify-center">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="radio"
+            name="role"
+            value="donante"
+            checked={role === "donante"}
+            onChange={() => setRole("donante")}
+          />
+          Donante
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="radio"
+            name="role"
+            value="admin"
+            checked={role === "admin"}
+            onChange={() => setRole("admin")}
+          />
+          Admin (@epn.edu.ec)
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="radio"
+            name="role"
+            value="recolector"
+            checked={role === "recolector"}
+            onChange={() => setRole("recolector")}
+          />
+          Recolector
+        </label>
+      </div>
 
       {tokenValid === null && (
         <p className="text-gray-600 text-sm">Verificando enlace...</p>

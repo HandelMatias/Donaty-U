@@ -7,6 +7,8 @@ import { isBlank, requireFields } from "../utils/validation.js";
 import { sendMailToRegister, sendMailToRecoveryPassword } from "../helpers/sendMail.js";
 
 const ROLES = ["donante"];
+const isEpnEmail = (email = "") =>
+  String(email).trim().toLowerCase().endsWith("@epn.edu.ec");
 
 const normalizeRole = (role = "") => String(role).trim().toLowerCase();
 const parseBoolean = (value) => {
@@ -51,6 +53,11 @@ const bootstrapAdmin = async (req, res) => {
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
+    if (!isEpnEmail(normalizedEmail)) {
+      return res.status(400).json({
+        msg: "Solo se permiten correos institucionales @epn.edu.ec para administradores",
+      });
+    }
     const [emailExistenteUser, emailExistenteAdmin, emailExistenteRecolector] = await Promise.all([
       Donante.findOne({ email: normalizedEmail }),
       Admin.findOne({ email: normalizedEmail }),
@@ -106,6 +113,11 @@ const recuperarPasswordAdmin = async (req, res) => {
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
+    if (!isEpnEmail(normalizedEmail)) {
+      return res.status(400).json({
+        msg: "Solo se permiten correos institucionales @epn.edu.ec para administradores",
+      });
+    }
     const admin = await Admin.findOne({ email: normalizedEmail });
     if (!admin) {
       return res
@@ -299,6 +311,48 @@ const listarUsuarios = async (req, res) => {
   }
 };
 
+const listarRecolectores = async (req, res) => {
+  try {
+    const { status, q, page = "1", limit = "20" } = req.query || {};
+    const filtro = {};
+
+    if (status !== undefined) {
+      const statusBool = parseBoolean(status);
+      if (statusBool === null) {
+        return res.status(400).json({ msg: "Status inválido" });
+      }
+      filtro.status = statusBool;
+    }
+
+    if (q) {
+      const regex = new RegExp(String(q), "i");
+      filtro.$or = [{ nombre: regex }, { apellido: regex }, { email: regex }];
+    }
+
+    const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+    const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+    const skip = (pageNum - 1) * limitNum;
+
+    const [items, total] = await Promise.all([
+      Recolector.find(filtro)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum),
+      Recolector.countDocuments(filtro),
+    ]);
+
+    return res.status(200).json({
+      total,
+      page: pageNum,
+      limit: limitNum,
+      items,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ msg: `❌ Error en el servidor - ${error}` });
+  }
+};
+
 const obtenerUsuario = async (req, res) => {
   try {
     const { id } = req.params;
@@ -348,6 +402,11 @@ const actualizarPerfilAdmin = async (req, res) => {
 
     const normalizedEmail = email ? email.trim().toLowerCase() : undefined;
     if (normalizedEmail && admin.email !== normalizedEmail) {
+      if (!isEpnEmail(normalizedEmail)) {
+        return res.status(400).json({
+          msg: "Solo se permiten correos institucionales @epn.edu.ec para administradores",
+        });
+      }
       const [emailExistenteUser, emailExistenteAdmin, emailExistenteRecolector] = await Promise.all([
         Donante.findOne({ email: normalizedEmail }),
         Admin.findOne({ email: normalizedEmail }),
@@ -443,6 +502,40 @@ const actualizarStatus = async (req, res) => {
   }
 };
 
+const actualizarStatusRecolector = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body || {};
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ msg: `ID inválido: ${id}` });
+    }
+
+    if (isBlank(status)) {
+      return res.status(400).json({ msg: "Debes llenar todos los campos" });
+    }
+
+    const nuevoStatus = parseBoolean(status);
+    if (nuevoStatus === null) {
+      return res.status(400).json({ msg: "Status inválido" });
+    }
+
+    const recolector = await Recolector.findById(id);
+    if (!recolector) {
+      return res
+        .status(404)
+        .json({ msg: `No existe el recolector con ID ${id}` });
+    }
+
+    recolector.status = nuevoStatus;
+    await recolector.save();
+    return res.status(200).json(recolector.toJSON());
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ msg: `❌ Error en el servidor - ${error}` });
+  }
+};
+
 const perfilAdmin = (req, res) => {
   const { token, confirmEmail, createdAt, updatedAt, __v, ...datosPerfil } =
     req.user.toJSON();
@@ -491,9 +584,11 @@ export {
   loginAdmin,
   listarUsuarios,
   obtenerUsuario,
+  listarRecolectores,
   actualizarPerfilAdmin,
   actualizarRol,
   actualizarStatus,
+  actualizarStatusRecolector,
   perfilAdmin,
   actualizarPasswordAdmin,
 };

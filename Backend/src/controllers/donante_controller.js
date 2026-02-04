@@ -11,6 +11,8 @@ import { isBlank, requireFields } from "../utils/validation.js";
 
 const isValidToken = (token = "") =>
   typeof token === "string" && token.trim().length === 32;
+const isEpnEmail = (email = "") =>
+  String(email).trim().toLowerCase().endsWith("@epn.edu.ec");
 
 const registro = async (req, res) => {
   try {
@@ -30,6 +32,11 @@ const registro = async (req, res) => {
     }
 
     const normalizedEmail = (email || "").trim().toLowerCase();
+    if (isEpnEmail(normalizedEmail)) {
+      return res.status(400).json({
+        msg: "Los correos @epn.edu.ec deben registrarse como administrador",
+      });
+    }
     const [verificarEmailBDD, verificarEmailAdmin, verificarEmailRecolector] = await Promise.all([
       Donante.findOne({ email: normalizedEmail }),
       Admin.findOne({ email: normalizedEmail }),

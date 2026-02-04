@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
 import { ToastContainer, toast } from "react-toastify";
 import { MdVisibility, MdVisibilityOff } from "react-icons/md";
 import "react-toastify/dist/ReactToastify.css";
@@ -8,13 +9,14 @@ import "react-toastify/dist/ReactToastify.css";
 import Facebook from "/src/assets/facebook.png";
 import Whats from "/src/assets/whatsapp.png";
 import Insta from "/src/assets/instagram.png";
+import { registerSchema } from "../validation/registerSchema.js";
 
 const Register = () => {
   const navigate = useNavigate();
 
-  const [step, setStep] = useState(1);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [role, setRole] = useState("donante"); // donante | admin | recolector
 
   // react-hook-form
   const {
@@ -22,11 +24,14 @@ const Register = () => {
     handleSubmit,
     trigger,
     formState: { errors },
-  } = useForm();
+  } = useForm({
+    resolver: yupResolver(registerSchema),
+    mode: "onBlur",
+  });
 
   // Función que se ejecuta al enviar TODO el formulario
   const registerUser = async (dataForm) => {
-    // Desestructuración: así llega req.body al backend
+    // Desestructuración: ya viene validado por Yup
     const { nombre, apellido, direccion, telefono, email, password } = dataForm;
 
     const payload = {
@@ -38,7 +43,15 @@ const Register = () => {
       password,
     };
 
-    const url = `${import.meta.env.VITE_BACKEND_URL}/donante/registro`;
+    const base = (import.meta.env.VITE_BACKEND_URL || "http://localhost:4000/api").replace(/\/$/, "");
+    const path =
+      role === "admin"
+        ? "/admin/registro"
+        : role === "recolector"
+        ? "/recolector/registro"
+        : "/donante/registro";
+    const url = `${base}${path}`;
+    const adminSecret = import.meta.env.VITE_ADMIN_SECRET || "";
     console.log("URL backend:", url);
     console.log("Datos enviados al backend:", payload);
 
@@ -47,7 +60,12 @@ const Register = () => {
 
       const resp = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(role === "admin" && adminSecret
+            ? { "x-admin-secret": adminSecret }
+            : {}),
+        },
         body: JSON.stringify(payload),
       });
 
@@ -60,10 +78,13 @@ const Register = () => {
       const data = await resp.json().catch(() => ({}));
       console.log("Respuesta del backend:", data);
 
-      toast.success("Registro exitoso. Ahora puedes iniciar sesión.", {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      toast.success(
+        data?.msg || "Registro exitoso. Revisa tu correo para confirmar tu cuenta.",
+        {
+          position: "top-right",
+          autoClose: 3000,
+        }
+      );
 
       setTimeout(() => {
         navigate("/login");
@@ -77,18 +98,6 @@ const Register = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Validar paso 1 antes de ir al 2
-  const handleNextStep = async () => {
-    const valid = await trigger(["nombre", "apellido", "direccion"]);
-    if (!valid) {
-      toast.error("Completa los datos personales antes de continuar", {
-        position: "top-right",
-      });
-      return;
-    }
-    setStep(2);
   };
 
   return (
@@ -165,210 +174,186 @@ const Register = () => {
       </section>
 
       {/* FORMULARIO MULTIPASO + RHF */}
-      <section className="relative px-4 md:px-10 py-16 bg-blue-50">
-        <div className="relative max-w-3xl mx-auto bg-white rounded-2xl p-8 md:p-10 border border-blue-100 shadow-[0_4px_15px_rgba(0,0,0,0.08)] overflow-hidden">
-          {/* pasos */}
-          <div className="flex justify-center mb-4 gap-2">
-            <div
-              className={`h-2 w-8 rounded-full ${
-                step === 1 ? "bg-blue-600" : "bg-blue-200"
-              }`}
-            />
-            <div
-              className={`h-2 w-8 rounded-full ${
-                step === 2 ? "bg-blue-600" : "bg-blue-200"
-              }`}
-            />
+      <section className="relative px-4 md:px-8 py-8 bg-blue-50">
+        <div className="relative max-w-3xl mx-auto bg-white rounded-3xl p-5 md:p-7 border border-blue-100 shadow-[0_16px_40px_rgba(15,23,42,0.12)] overflow-hidden">
+
+          {/* Rol */}
+          <div className="mb-6 flex flex-wrap justify-center gap-2">
+            {[
+              { value: "donante", label: "Donante" },
+              { value: "admin", label: "Admin" },
+              { value: "recolector", label: "Recolector" },
+            ].map((r) => (
+              <button
+                key={r.value}
+                type="button"
+                onClick={() => setRole(r.value)}
+                className={`px-4 py-2 rounded-full text-sm font-medium border transition shadow-sm ${
+                  role === r.value
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
           </div>
 
           {/* RHF: handleSubmit llama a registerUser */}
           <form onSubmit={handleSubmit(registerUser)}>
-            <div
-              className="flex transition-transform duration-500"
-              style={{ transform: `translateX(${step === 1 ? "0" : "-100%"})` }}
-            >
-              {/* PASO 1 */}
-              <div className="min-w-full">
-                <h2 className="text-center text-2xl md:text-3xl text-gray-900 font-semibold mb-8">
-                  Datos personales
-                </h2>
+            <h2 className="text-center text-2xl md:text-3xl text-gray-900 font-semibold mb-8">
+              Datos de registro
+            </h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Nombre */}
-                  <div className="flex flex-col space-y-1">
-                    <label className="text-gray-800 text-sm md:text-base">
-                      Nombre:
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Tu nombre"
-                      className="border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-800 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm"
-                      {...register("nombre", {
-                        required: "El nombre es obligatorio",
-                      })}
-                    />
-                    {errors.nombre && (
-                      <p className="text-red-700 text-sm">
-                        {errors.nombre.message}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Apellido */}
-                  <div className="flex flex-col space-y-1">
-                    <label className="text-gray-800 text-sm md:text-base">
-                      Apellido:
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Tu apellido"
-                      className="border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-800 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm"
-                      {...register("apellido", {
-                        required: "El apellido es obligatorio",
-                      })}
-                    />
-                    {errors.apellido && (
-                      <p className="text-red-700 text-sm">
-                        {errors.apellido.message}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Dirección */}
-                  <div className="flex flex-col space-y-1 md:col-span-2">
-                    <label className="text-gray-800 text-sm md:text-base">
-                      Dirección:
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Tu dirección"
-                      className="border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-800 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm"
-                      {...register("direccion", {
-                        required: "La dirección es obligatoria",
-                      })}
-                    />
-                    {errors.direccion && (
-                      <p className="text-red-700 text-sm">
-                        {errors.direccion.message}
-                      </p>
-                    )}
-                  </div>
+            <div className="space-y-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Nombre */}
+                <div className="flex flex-col space-y-1">
+                  <label className="text-gray-800 text-sm md:text-base">
+                    Nombre
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Tu nombre"
+                    className="border border-gray-200 rounded-lg px-4 py-3 bg-white text-gray-800 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm"
+                    {...register("nombre", {
+                      required: "El nombre es obligatorio",
+                    })}
+                  />
+                  {errors.nombre && (
+                    <p className="text-red-700 text-sm">{errors.nombre.message}</p>
+                  )}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleNextStep}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg mt-8 shadow-md transition"
-                >
-                  Siguiente →
-                </button>
-              </div>
-
-              {/* PASO 2 */}
-              <div className="min-w-full">
-                <h2 className="text-center text-2xl md:text-3xl text-gray-900 font-semibold mb-8">
-                  Datos de contacto
-                </h2>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Email */}
-                  <div className="flex flex-col space-y-1">
-                    <label className="text-gray-800 text-sm md:text-base">
-                      E-mail:
-                    </label>
-                    <input
-                      type="email"
-                      name="email"
-                      autoComplete="username"
-                      placeholder="correo@ejemplo.com"
-                      className="border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-800 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm"
-                      {...register("email", {
-                        required: "El correo electrónico es obligatorio",
-                      })}
-                    />
-                    {errors.email && (
-                      <p className="text-red-700 text-sm">
-                        {errors.email.message}
-                      </p>
-                    )}
-                  </div>
-
-                    {/* Teléfono */}
-                    <div className="flex flex-col space-y-1">
-                      <label className="text-gray-800 text-sm md:text-base">
-                        Teléfono:
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Tu teléfono"
-                        className="border border-gray-300 rounded-lg px-4 py-2 bg-white text-gray-800 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm"
-                      {...register("telefono", {
-                        required: "El teléfono es obligatorio",
-                      })}
-                    />
-                    {errors.telefono && (
-                      <p className="text-red-700 text-sm">
-                        {errors.telefono.message}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Contraseña */}
-                  <div className="flex flex-col space-y-1 md:col-span-2">
-                    <label className="text-gray-800 text-sm md:text-base">
-                      Contraseña:
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        autoComplete="new-password"
-                        placeholder="Tu contraseña"
-                        className="border border-gray-300 rounded-lg px-4 py-2 w-full bg-white text-gray-800 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm pr-10"
-                        {...register("password", {
-                          required: "La contraseña es obligatoria",
-                        })}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
-                        aria-label={
-                          showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
-                        }
-                      >
-                        {showPassword ? (
-                          <MdVisibilityOff size={20} />
-                        ) : (
-                          <MdVisibility size={20} />
-                        )}
-                      </button>
-                    </div>
-                    {errors.password && (
-                      <p className="text-red-700 text-sm">
-                        {errors.password.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex flex-col md:flex-row justify-between gap-4 mt-8">
-                  <button
-                    type="button"
-                    onClick={() => setStep(1)}
-                    className="w-full md:w-auto bg-gray-200 hover:bg-gray-300 text-gray-800 px-5 py-2 rounded-lg shadow-sm transition"
-                  >
-                    ← Atrás
-                  </button>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white px-5 py-2 rounded-lg shadow-md transition"
-                  >
-                    {loading ? "Enviando..." : "Enviar ✔"}
-                  </button>
+                {/* Apellido */}
+                <div className="flex flex-col space-y-1">
+                  <label className="text-gray-800 text-sm md:text-base">
+                    Apellido
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Tu apellido"
+                    className="border border-gray-200 rounded-lg px-4 py-3 bg-white text-gray-800 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm"
+                    {...register("apellido", {
+                      required: "El apellido es obligatorio",
+                    })}
+                  />
+                  {errors.apellido && (
+                    <p className="text-red-700 text-sm">{errors.apellido.message}</p>
+                  )}
                 </div>
               </div>
+
+              <div className="flex flex-col space-y-1">
+                <label className="text-gray-800 text-sm md:text-base">
+                  Dirección
+                </label>
+                <input
+                  type="text"
+                  placeholder="Tu dirección"
+                  className="border border-gray-200 rounded-lg px-4 py-3 bg-white text-gray-800 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm"
+                  {...register("direccion", {
+                    required: "La dirección es obligatoria",
+                  })}
+                />
+                {errors.direccion && (
+                  <p className="text-red-700 text-sm">
+                    {errors.direccion.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Email */}
+                <div className="flex flex-col space-y-1">
+                  <label className="text-gray-800 text-sm md:text-base">
+                    E-mail
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    autoComplete="username"
+                    placeholder="correo@ejemplo.com"
+                    className="border border-gray-200 rounded-lg px-4 py-3 bg-white text-gray-800 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm"
+                    {...register("email", {
+                      required: "El correo electrónico es obligatorio",
+                    })}
+                  />
+                  {errors.email && (
+                    <p className="text-red-700 text-sm">{errors.email.message}</p>
+                  )}
+                </div>
+
+                {/* Teléfono */}
+                <div className="flex flex-col space-y-1">
+                  <label className="text-gray-800 text-sm md:text-base">
+                    Teléfono
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Tu teléfono"
+                    className="border border-gray-200 rounded-lg px-4 py-3 bg-white text-gray-800 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm"
+                    {...register("telefono", {
+                      required: "El teléfono es obligatorio",
+                    })}
+                  />
+                  {errors.telefono && (
+                    <p className="text-red-700 text-sm">
+                      {errors.telefono.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Password */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex flex-col space-y-1">
+                  <label className="text-gray-800 text-sm md:text-base">
+                    Contraseña
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="new-password"
+                      placeholder="Tu contraseña"
+                      className="border border-gray-200 rounded-lg px-4 py-3 w-full bg-white text-gray-800 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none shadow-sm pr-10"
+                      {...register("password", {
+                        required: "La contraseña es obligatoria",
+                      })}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                      aria-label={
+                        showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                      }
+                    >
+                      {showPassword ? (
+                        <MdVisibilityOff size={20} />
+                      ) : (
+                        <MdVisibility size={20} />
+                      )}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="text-red-700 text-sm">
+                      {errors.password.message}
+                    </p>
+                  )}
+                </div>
+                <div />
+              </div>
+            </div>
+
+            <div className="mt-10 flex justify-end">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white py-3 px-8 rounded-lg shadow-md transition"
+              >
+                {loading ? "Enviando..." : "Registrarme"}
+              </button>
             </div>
           </form>
         </div>
@@ -385,17 +370,17 @@ const Register = () => {
       <footer className="bg-slate-900 text-white py-6 font-sans">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <nav className="flex gap-2 text-sm">
-            <NavLink to="/politicsterms" className="text-blue-200 hover:underline">
+            <NavLink to="/politicsterms" className="text-white hover:underline">
               Políticas de Privacidad
             </NavLink>
             <span>|</span>
-            <NavLink to="/politicsterms" className="text-blue-200 hover:underline">
+            <NavLink to="/politicsterms" className="text-white hover:underline">
               Términos de Uso
             </NavLink>
           </nav>
 
           <p className="text-xs md:text-sm">
-            © DONATY-EC. Todos los derechos reservados.
+            © DONATY-U Todos los derechos reservados.
           </p>
 
           <div className="flex gap-4">

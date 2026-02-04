@@ -15,9 +15,17 @@ const Forgot = () => {
   } = useForm();
 
   const [loading, setLoading] = useState(false);
+  const [role, setRole] = useState("donante"); // donante | admin | recolector
 
   const sendMail = async ({ email }) => {
-    const url = `${import.meta.env.VITE_BACKEND_URL}/donante/recuperarpassword`;
+    const base = (import.meta.env.VITE_BACKEND_URL || "http://localhost:4000/api").replace(/\/$/, "");
+    const path =
+      role === "admin"
+        ? "/admin/recuperarpassword"
+        : role === "recolector"
+        ? "/recolector/recuperarpassword"
+        : "/donante/recuperarpassword";
+    const url = `${base}${path}`;
     console.log("URL recuperar password:", url);
 
     try {
@@ -69,6 +77,40 @@ const Forgot = () => {
           <small className="text-gray-500 block my-4 text-sm text-center">
             No te preocupes, te ayudaremos a recuperarla.
           </small>
+
+          {/* Rol */}
+          <div className="mb-3 text-sm text-gray-700 flex gap-4 justify-center">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="role"
+                value="donante"
+                checked={role === "donante"}
+                onChange={() => setRole("donante")}
+              />
+              Donante
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="role"
+                value="admin"
+                checked={role === "admin"}
+                onChange={() => setRole("admin")}
+              />
+              Admin (@epn.edu.ec)
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="role"
+                value="recolector"
+                checked={role === "recolector"}
+                onChange={() => setRole("recolector")}
+              />
+              Recolector
+            </label>
+          </div>
 
           {/* Formulario */}
           <form onSubmit={handleSubmit(sendMail)}>

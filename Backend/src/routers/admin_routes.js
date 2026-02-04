@@ -8,10 +8,12 @@ import {
   crearNuevoPasswordAdmin,
   loginAdmin,
   listarUsuarios,
+  listarRecolectores,
   obtenerUsuario,
   actualizarPerfilAdmin,
   actualizarRol,
   actualizarStatus,
+  actualizarStatusRecolector,
   perfilAdmin,
   actualizarPasswordAdmin,
 } from "../controllers/admin_controller.js";
@@ -32,12 +34,14 @@ router.post("/nuevopassword/:token", crearNuevoPasswordAdmin);
 router.use(auth, requireRole("admin"));
 
 router.get("/users", listarUsuarios);
+router.get("/recolectores", listarRecolectores);
 router.get("/perfil", perfilAdmin);
 router.get("/dashboard", getDashboardStats);
 router.get("/users/:id", obtenerUsuario);
 router.put("/actualizarperfil/:id", actualizarPerfilAdmin);
 router.patch("/users/:id/role", actualizarRol);
 router.patch("/users/:id/status", actualizarStatus);
+router.patch("/recolectores/:id/status", actualizarStatusRecolector);
 router.put("/actualizarpassword/:id", actualizarPasswordAdmin);
 
 export default router;

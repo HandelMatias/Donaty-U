@@ -8,10 +8,10 @@ const [isOpen, setIsOpen] = useState(false);
 return (
 <header className="w-full bg-gray-400 black shadow-sm px-6 flex justify-between items-center h-24 relative">
 
-    {/* Logo */}
-    <div className="flex items-center gap-4">
-    <img src={LogoDonaty} className="h-40 w-auto" alt="Logo Donaty" />
-    </div>
+    {/* Logo (click -> home) */}
+    <NavLink to="/" className="flex items-center gap-4 cursor-pointer">
+      <img src={LogoDonaty} className="h-40 w-auto" alt="Logo Donaty" />
+    </NavLink>
 
     {/* Menú escritorio */}
     <nav className="hidden md:flex gap-6 items-center text-gray-800 font-semibold">

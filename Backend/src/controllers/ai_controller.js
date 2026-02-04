@@ -228,4 +228,12 @@ const deleteEmbeddings = async (_req, res) => {
   }
 };
 
-export { embeddings, similarity, indexAndCompare, listEmbeddings, deleteEmbeddings };
+export {
+  embeddings,
+  similarity,
+  indexAndCompare,
+  listEmbeddings,
+  deleteEmbeddings,
+  fetchEmbedding,
+  cosineSimilarity,
+};

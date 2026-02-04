@@ -9,9 +9,14 @@ const getCheckoutUrls = () => {
     process.env.STRIPE_SUCCESS_URL || process.env.URL_FRONTEND || "";
   const cancel =
     process.env.STRIPE_CANCEL_URL || process.env.URL_FRONTEND || "";
+  const successBase = success ? success.replace(/\/$/, "") : "";
+  const cancelBase = cancel ? cancel.replace(/\/$/, "") : "";
   return {
-    success_url: success ? `${success.replace(/\/$/, "")}/success` : "",
-    cancel_url: cancel ? `${cancel.replace(/\/$/, "")}/cancel` : "",
+    // enviamos el session_id para confirmar en caso de que el webhook no esté activo
+    success_url: successBase
+      ? `${successBase}/success?session_id={CHECKOUT_SESSION_ID}`
+      : "",
+    cancel_url: cancelBase ? `${cancelBase}/cancel` : "",
   };
 };
 
@@ -136,4 +141,50 @@ const stripeWebhook = async (req, res) => {
   return res.status(200).json({ received: true });
 };
 
-export { createCheckoutSession, stripeWebhook, createStripeCheckoutSession };
+// Confirmar manualmente una sesión (fallback si el webhook no está disponible)
+const confirmCheckoutSession = async (req, res) => {
+  try {
+    const { sessionId } = req.body || {};
+    if (!sessionId) {
+      return res.status(400).json({ msg: "sessionId requerido" });
+    }
+
+    if (!stripeSecret) {
+      return res
+        .status(500)
+        .json({ msg: "STRIPE_SECRET_KEY no configurado en el servidor" });
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    if (!session) {
+      return res.status(404).json({ msg: "Sesión no encontrada" });
+    }
+
+    const donacionId = session?.metadata?.donacionId;
+    if (donacionId) {
+      await Donacion.findByIdAndUpdate(donacionId, {
+        estado: session.payment_status === "paid" ? "pagado" : "pendiente",
+        stripeSessionId: session.id,
+        stripePaymentIntentId: session.payment_intent || null,
+      });
+    }
+
+    return res.status(200).json({
+      status: session.payment_status,
+      donacionId,
+      payment_intent: session.payment_intent,
+    });
+  } catch (error) {
+    console.error("Error confirmando sesión Stripe:", error);
+    return res
+      .status(500)
+      .json({ msg: error.message || "No se pudo confirmar la sesión" });
+  }
+};
+
+export {
+  createCheckoutSession,
+  stripeWebhook,
+  createStripeCheckoutSession,
+  confirmCheckoutSession,
+};

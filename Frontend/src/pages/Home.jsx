@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import LogoDonaty from '/src/assets/LogoDEc.png'
 import Juguetes from '/src/assets/Imagen2.png'
 import ComidaVegetales from '/src/assets/Imagen4.png'
@@ -9,31 +10,36 @@ import Insta from '/src/assets/instagram.png'
 import { NavLink } from 'react-router-dom'
 
 const Home = () => {
+    const API = useMemo(
+        () => (import.meta.env.VITE_API_URL || "http://localhost:4000/api").replace(/\/$/, ""),
+        []
+    );
 
-    // Donaciones de ejemplo (estáticas)
-    const donaciones = [
-        {
-            id: 1,
-            nombre: "Carlos Q.",
-            tipoDonacion: "Juguetes",
-            comentarios: "Muy feliz de ayudar",
-            fotos: Juguetes
-        },
-        {
-            id: 2,
-            nombre: "María P.",
-            tipoDonacion: "Alimentos",
-            comentarios: "Espero que les guste",
-            fotos: ComidaVegetales
-        },
-        {
-            id: 3,
-            nombre: "Luis F.",
-            tipoDonacion: "Ropa",
-            comentarios: "Ropa en buen estado",
-            fotos: Ropa
-        }
-    ];
+    const [donaciones, setDonaciones] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
+
+    useEffect(() => {
+        const fetchDonaciones = async () => {
+            try {
+                setLoading(true);
+                const res = await fetch(`${API}/donacion/public`);
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(data?.msg || "No se pudieron cargar las donaciones");
+
+                // data.items esperado desde backend admin
+                const items = data?.items || data?.donaciones || [];
+                setDonaciones(items);
+                setErrorMsg("");
+            } catch (e) {
+                setErrorMsg(e.message || "No se pudieron cargar las donaciones");
+                setDonaciones([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDonaciones();
+    }, [API]);
 
     return (
         <>
@@ -108,18 +114,47 @@ const Home = () => {
             <section className="py-8 px-6 bg-[#FFE9B7] rounded-lg shadow-inner mb-20">
                 <h2 className="text-3xl text-center mb-6">Donaciones realizadas por la comunidad de Donaty</h2>
 
-                <div className="flex overflow-x-auto gap-4 py-4">
-                    {donaciones.map((donacion) => (
-                        <div key={donacion.id} className="bg-white rounded-lg shadow p-4 min-w-[250px] flex flex-col items-center">
-                            <img src={donacion.fotos} alt="donacion" className="w-44 h-36 object-cover rounded mb-3"/>
-                            <div className="text-sm text-center">
-                                <p>Nombre del donante: {donacion.nombre}</p>
-                                <p>Tipo de donación: {donacion.tipoDonacion}</p>
-                                <p>Comentario: {donacion.comentarios}</p>
-                            </div>
-                        </div>
-                    ))}
-                </div>
+                {loading ? (
+                    <p className="text-center text-gray-700">Cargando donaciones...</p>
+                ) : errorMsg ? (
+                    <p className="text-center text-red-700">{errorMsg}</p>
+                ) : donaciones.length === 0 ? (
+                    <p className="text-center text-gray-700">Aún no hay donaciones registradas.</p>
+                ) : (
+                    <div className="flex overflow-x-auto gap-4 py-4">
+                        {donaciones.map((donacion) => {
+                            const img =
+                              donacion.imagen ||
+                              (donacion.tipo === "dinero"
+                                ? Cash
+                                : donacion.categoria?.toLowerCase().includes("ropa")
+                                ? Ropa
+                                : donacion.categoria?.toLowerCase().includes("alimento")
+                                ? ComidaVegetales
+                                : Juguetes);
+                            return (
+                              <div key={donacion._id || donacion.id} className="bg-white rounded-lg shadow p-4 min-w-[250px] flex flex-col items-center">
+                                  <img src={img} alt="donacion" className="w-44 h-36 object-cover rounded mb-3"/>
+                                  <div className="text-sm text-center">
+                                      <p>
+                                        <b>Donante:</b>{" "}
+                                        {donacion?.donante?.nombre || donacion.nombre || "Anónimo"}
+                                      </p>
+                                      <p>
+                                        <b>Tipo:</b> {donacion.tipo || donacion.tipoDonacion || "-"}
+                                      </p>
+                                      <p>
+                                        <b>Categoría:</b> {donacion.categoria || "-"}
+                                      </p>
+                                      <p className="text-gray-600">
+                                        {donacion.descripcion || donacion.comentarios || ""}
+                                      </p>
+                                  </div>
+                              </div>
+                            );
+                        })}
+                    </div>
+                )}
             </section>
 
             {/* VIDEO */}
@@ -144,14 +179,14 @@ const Home = () => {
             </section>
 
             {/* FOOTER */}
-            <footer className="bg-[#170404] text-white py-6 font-sans">
+            <footer className="bg-slate-900 text-white py-6 font-sans">
                 <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
                     <nav className="flex gap-2">
-                        <NavLink to="/politicsterms" className="text-pink-200 hover:underline">Políticas de Privacidad</NavLink>|
-                        <NavLink to="/politicsterms" className="text-pink-200 hover:underline">Términos de Uso</NavLink>
+                        <NavLink to="/politicsterms" className="text-white hover:underline">Políticas de Privacidad</NavLink>|
+                        <NavLink to="/politicsterms" className="text-white hover:underline">Términos de Uso</NavLink>
                     </nav>
 
-                    <p>© DONATY-EC. Todos los derechos reservados.</p>
+                    <p>© DONATY-U Todos los derechos reservados.</p>
 
                     <div className="flex gap-4">
                         <a href="https://www.facebook.com/profile.php?id=61570160151308" target="_blank">
